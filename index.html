@@ -152,7 +152,36 @@ async function diaryHandleSession(session){
    for(var b=0;b<localGames.length;b++){
     var lg=localGames[b],key=diaryKey(lg),existing=remote.find(function(r){return (r.fixture_key?"f:"+r.fixture_key:r.local_key?"l:"+r.local_key:"")===key});
     if(!existing){lg._dbId=null;await diarySyncOne(lg)}
-    else if(lg._localUpdatedAt&&Date.parse(lg._localUpdatedAt)>Date.parse(existing.updated_at||"1970-01-01T00:00:00Z")+1000){lg._dbId=existing.id;diaryCloudRowIds[key]=existing.id;await diarySyncOne(lg)}
+    else{
+     var localIsNewer=!!(lg._localUpdatedAt&&Date.parse(lg._localUpdatedAt)>Date.parse(existing.updated_at||"1970-01-01T00:00:00Z")+1000);
+     lg._dbId=existing.id;diaryCloudRowIds[key]=existing.id;
+     if(localIsNewer){await diarySyncOne(lg)}
+     else if(diaryOfficial(lg)){
+      var patch={};
+      function putScheduleField(col,val){
+       var oldVal=existing[col];
+       if(col==="kickoff"){oldVal=oldVal?String(oldVal).slice(0,5):null;val=val?String(val).slice(0,5):null}
+       if(oldVal!==val)patch[col]=val;
+      }
+      putScheduleField("match_date",lg.date||todayKey());
+      putScheduleField("kickoff",lg.time||null);
+      putScheduleField("round_label",lg.round||"");
+      putScheduleField("is_home",!!lg.home);
+      if(lg.bye){putScheduleField("opponent","Folga");putScheduleField("venue","")}
+      else{
+       var officialOpponent=(lg.opp||"").trim();
+       if(officialOpponent&&!/^(a confirmar|adversário por confirmar)$/i.test(officialOpponent))putScheduleField("opponent",officialOpponent);
+       var officialVenue=(lg.venue||"").trim();
+       if(officialVenue&&!/^(a indicar|campo por confirmar|por confirmar|campo a definir|a definir)$/i.test(officialVenue))putScheduleField("venue",officialVenue);
+      }
+      if(Object.keys(patch).length){
+       var scheduledUpdate=await diarySupabase.from("matches").update(patch).eq("id",existing.id).select("id,updated_at").single();
+       if(scheduledUpdate.error)throw scheduledUpdate.error;
+       Object.keys(patch).forEach(function(col){existing[col]=patch[col]});
+       existing.updated_at=scheduledUpdate.data.updated_at;
+      }
+     }
+    }
    }
   }
   if(gen!==diaryAuthGeneration)return;
