@@ -7,6 +7,7 @@ import argparse
 import html
 import json
 import re
+import datetime
 import sys
 import unicodedata
 from pathlib import Path
@@ -16,6 +17,7 @@ from urllib.request import Request, urlopen
 BASE = "https://centroderesultados-as-prd.azurewebsites.net"
 START_URL = f"{BASE}/Competition/Details?competitionId=22591&seasonId=106"
 INDEX_PATH = Path("index.html")
+SCHEDULE_PATH = Path("fpf-schedule.json")
 TARGET_TEAM = "Dragon Force F.C. \"C\""
 MONTHS = {
     "jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6,
@@ -224,17 +226,47 @@ def run(dry_run: bool) -> int:
     actual_count = sum(1 for row in new_seeds if row[2])
     print(f"Validated {actual_count} scheduled Dragon Force C matches and {len(new_seeds)-actual_count} bye rounds.")
     print(json.dumps(new_seeds, ensure_ascii=False, indent=2))
+    official_schedule = {
+        "source": "FPF Centro de Resultados",
+        "source_url": START_URL,
+        "season_id": 106,
+        "season_name": "2026-2027",
+        "competition_id": 29761,
+        "group_name": "GRUPO VERMELHO",
+        "team_name": "Dragon Force F.C. C",
+        "matches": [
+            {
+                "fixture_key": f"fpf-r{idx + 1}",
+                "round_label": row[1],
+                "match_date": row[0] if row[2] else None,
+                "kickoff": row[5] if row[2] and row[5] else None,
+                "opponent": row[2] if row[2] else "Folga",
+                "is_home": bool(row[3]),
+                "venue": row[4] if row[2] else "",
+                "match_status": "scheduled" if row[2] else "bye",
+            }
+            for idx, row in enumerate(new_seeds)
+        ],
+    }
+    schedule_json = json.dumps(official_schedule, ensure_ascii=False, indent=2) + "\\n"
+    print(f"Prepared public schedule metadata for {len(official_schedule['matches'])} rounds.")
     if dry_run:
         return 0
     replacement = "var SEED=" + json.dumps(new_seeds, ensure_ascii=False, indent=0) + ";"
-    updated, count = re.subn(r"var SEED=\[[\s\S]*?\];", replacement, index, count=1)
+    updated, count = re.subn(r"var SEED=\\[[\\s\\S]*?\\];", replacement, index, count=1)
     if count != 1:
         raise RuntimeError("Could not replace the SEED array safely")
     if updated != index:
         INDEX_PATH.write_text(updated, encoding="utf-8")
         print("Updated index.html from the official FPF schedule.")
     else:
-        print("No schedule changes detected.")
+        print("No index.html schedule changes detected.")
+    previous_schedule = SCHEDULE_PATH.read_text(encoding="utf-8") if SCHEDULE_PATH.exists() else None
+    if previous_schedule != schedule_json:
+        SCHEDULE_PATH.write_text(schedule_json, encoding="utf-8")
+        print("Updated fpf-schedule.json for read-only visitor views.")
+    else:
+        print("No public schedule JSON changes detected.")
     return 0
 
 
