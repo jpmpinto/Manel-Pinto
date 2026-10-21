@@ -241,6 +241,10 @@ render=function(){
  if(diaryGuestMode&&tab==="more")tab="games";
  document.querySelector("nav").style.display="flex";
  m.innerHTML=tab==="games"?renderOverview()+renderGames():tab==="stats"?renderStats():renderMore();
+ if(diaryGuestMode){
+  m.innerHTML='<div class="card"><div class="note">Modo visitante: podes consultar jogos e registos, mas não alterar dados.</div><button type="button" class="btn" id="guest-exit">Sair do acesso de visitante</button></div>'+m.innerHTML;
+  $("#guest-exit").onclick=function(){diaryGuestMode=false;diaryUser=null;diarySeasonId=null;diaryCloudReady=false;diaryLocalKey=KEY;diaryCloudRowIds={};S={games:[],hidden:[]};tab="games";render()};
+ }
  $("#fab").style.display=tab==="games"&&!diaryGuestMode?"block":"none";
  document.querySelectorAll("nav button").forEach(function(b){b.style.display=diaryGuestMode&&b.dataset.t==="more"?"none":"";b.classList.toggle("on",b.dataset.t===tab)});
  if(tab==="more"){
