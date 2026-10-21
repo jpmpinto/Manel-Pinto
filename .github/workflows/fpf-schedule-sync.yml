@@ -1,0 +1,60 @@
+name: Sync Dragon Force C schedule from FPF
+
+on:
+  push:
+    paths:
+      - ".github/scripts/sync_fpf_schedule.py"
+      - ".github/workflows/fpf-schedule-sync.yml"
+  schedule:
+    # GitHub Actions uses UTC. These two runs plus the local-time guard cover Lisbon DST changes.
+    - cron: "0 9 * * 4"
+    - cron: "0 10 * * 4"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fpf-schedule-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run only at 10:00 Lisbon time for scheduled runs
+        id: schedule_gate
+        if: ${{ github.event_name == 'schedule' }}
+        shell: bash
+        run: |
+          local_day="$(TZ=Europe/Lisbon date +%u)"
+          local_hour="$(TZ=Europe/Lisbon date +%H)"
+          if [[ "$local_day" != "4" || "$local_hour" != "10" ]]; then
+            echo "Not the Thursday 10:00 Europe/Lisbon slot; skipping this UTC duplicate."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Running in the Thursday 10:00 Europe/Lisbon slot."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch and validate official FPF schedule, then update seed data
+        if: ${{ github.event_name != 'schedule' || steps.schedule_gate.outputs.skip != 'true' }}
+        run: python3 .github/scripts/sync_fpf_schedule.py --apply
+
+      - name: Commit and publish schedule changes
+        if: ${{ github.event_name != 'schedule' || steps.schedule_gate.outputs.skip != 'true' }}
+        shell: bash
+        run: |
+          if [[ -z "$(git status --porcelain -- index.html)" ]]; then
+            echo "No official schedule changes detected."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Update Dragon Force C fixtures from official FPF schedule"
+          git push
