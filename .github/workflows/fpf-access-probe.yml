@@ -55,3 +55,31 @@ jobs:
           }
           probe "FPF primary domain" 'https://resultados.fpf.pt/Competition/Details?competitionId=22591&seasonId=102'
           probe "FPF Azure host" 'https://centroderesultados-as-prd.azurewebsites.net/Competition/Details?competitionId=22591&seasonId=102'
+          curl -L --silent --show-error --max-time 20 \
+            -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' \
+            'https://centroderesultados-as-prd.azurewebsites.net/Scripts/scripts.js?v=1.0.0.17774' -o /tmp/fpf-scripts.js
+          echo "=== FPF frontend script analysis ==="
+          echo "SCRIPT_BYTES=$(wc -c < /tmp/fpf-scripts.js)"
+          python3 - /tmp/fpf-scripts.js <<'PY'
+          import re,sys
+          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
+          print("SCRIPT_PREVIEW="+text[:180].replace("\n"," "))
+          for term in ["OnSuccessAjaxCalls","GetCompetition","GetMatches","GetGames","Competition/Get","Match","Jornada","Round","ajax"]:
+              occ=[m.start() for m in re.finditer(term,text,re.I)]
+              print("TERM",term,"COUNT",len(occ))
+              for pos in occ[:3]:
+                  print("CTX",term,text[max(0,pos-280):min(len(text),pos+480)].replace("\n"," ")[:780])
+          PY
+          curl -L --silent --show-error --max-time 20 \
+            -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' \
+            -H 'Referer: https://centroderesultados-as-prd.azurewebsites.net/' \
+            'https://centroderesultados-as-prd.azurewebsites.net/Competition/Details?competitionId=22591&seasonId=106' -o /tmp/fpf-season106.html
+          echo "=== season 106 HTML summary ==="
+          python3 - /tmp/fpf-season106.html <<'PY'
+          import re,sys
+          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
+          print("BYTES",len(text),"HAS_DATE",bool(re.search(r"2026|2027",text)),"HAS_MATCH_TEXT",bool(re.search(r"Barrosas|Dragon Force|Grupo Vermelho",text,re.I)))
+          for p in [text.find('id="SeasonId"'),text.find('id="CompetitionId"'),text.find('id="competitionId"')]:
+              if p>=0: print("FORM_CONTEXT",text[max(0,p-200):p+1700].replace("\n"," ")[:1900])
+          print("OG_TITLE",re.findall(r"<meta[^>]+property=['\"]og:title['\"][^>]+>",text,re.I)[:2])
+          PY
