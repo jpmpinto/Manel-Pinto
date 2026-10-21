@@ -124,5 +124,9 @@ jobs:
           print("ROUND_PREVIEW="+re.sub(r"\s+"," ",text[:600]))
           stripped=html.unescape(re.sub(r"<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>"," ",text,flags=re.I|re.S))
           print("ROUND_TEXT="+re.sub(r"\s+"," ",re.sub(r"<[^>]+>"," ",stripped))[:5000])
+          for term in ["id=\\"matches\\"","Castêlo","class=\\"match","class=\\"game"]:
+              pos=text.find(term)
+              print("HTML_TERM",term,"COUNT",text.count(term),"POS",pos)
+              if pos>=0: print("HTML_CTX",term,text[max(0,pos-150):min(len(text),pos+1150)].replace("\n"," ")[:1300])
           PY
           fi
