@@ -56,6 +56,28 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html fpf-schedule.json schedule-overrides.json
-          git commit -m "Update Dragon Force C fixtures from official FPF schedule"
-          git push
+
+          # Another workflow or an email-derived override may update main while this
+          # run is fetching the FPF calendar. Re-fetch and regenerate on push races.
+          for attempt in 1 2 3; do
+            git add index.html fpf-schedule.json schedule-overrides.json
+            if git diff --cached --quiet; then
+              echo "No official schedule changes detected."
+              exit 0
+            fi
+            git commit -m "Update Dragon Force C fixtures from official FPF schedule"
+            if git push origin HEAD:main; then
+              echo "Schedule update pushed successfully."
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq 3 ]]; then
+              echo "Push failed after 3 attempts." >&2
+              exit 1
+            fi
+
+            echo "Remote main changed during this run; refreshing and revalidating the latest calendar (attempt $attempt)."
+            git fetch origin main
+            git reset --hard origin/main
+            python3 .github/scripts/sync_fpf_schedule.py --apply
+          done
