@@ -25,17 +25,95 @@
 <script>
 var KEY="diario-manel-2627",tab="games",S={games:[]};
 var SEED=[
-["2026-12-01","Jornada 1","C.R.P. Barrosas “B”",0,"Complexo do C.R.P. Barrosas (Felgueiras)","12:30"],
-["2026-10-31","Jornada 2","S.C. Castêlo Maia “B”",1,"A Indicar","11:30"],
-["2026-11-07","Jornada 3","A. Vermelhinhos V.N.G. “B”",0,"Complexo Desportivo Sermonde","11:30"],
-["2026-11-14","Jornada 4","G.D.C. Ferreira",1,"New Balance Park - Sint","11:30"],
-["2026-11-21","Jornada 5","Varzim S.C. “C”",0,"Campo Sint Nº1 Est Mun Póvoa de Varzim","11:30"],
-["2026-11-28","Jornada 6","",0,"","11:30"],
-["2026-12-05","Jornada 7","Aliança F.C. Gandra",1,"New Balance Park - Sint","11:30"],
-["2026-12-12","Jornada 8","Custóias F.C. “B”",0,"Complexo Desportivo Custóias","11:30"],
-["2026-12-19","Jornada 9","C.D. Leões Seroa",1,"New Balance Park - Sint","11:30"],
-["2027-01-09","Jornada 10","A.D.L. - A.D. Lousada “B”",0,"Complexo Desportivo Lousada - Fut5 Nº1","11:30"],
-["2027-01-16","Jornada 11","Aliados F.C. Lordelo",1,"New Balance Park - Sint","11:30"]];
+[
+"2026-12-01",
+"Jornada 1",
+"C.R.P. Barrosas “B”",
+0,
+"Complexo Do C.R.P. Barrosas",
+"12:30"
+],
+[
+"2026-10-31",
+"Jornada 2",
+"S.C. Castêlo Maia “B”",
+1,
+"Recinto A Indicar",
+"11:30"
+],
+[
+"2026-11-07",
+"Jornada 3",
+"A. Vermelhinhos V.N.G. “B”",
+0,
+"Complexo Desportivo Sermonde",
+"11:30"
+],
+[
+"2026-11-14",
+"Jornada 4",
+"G.D.C. Ferreira",
+1,
+"New Balance Park – Sint",
+"11:30"
+],
+[
+"2026-11-21",
+"Jornada 5",
+"Varzim S.C. “C”",
+0,
+"Campo Sint Nº1 Est Mun Povoa De Varzim",
+"11:30"
+],
+[
+"2026-11-28",
+"Jornada 6",
+"",
+0,
+"",
+""
+],
+[
+"2026-12-05",
+"Jornada 7",
+"Aliança F.C. Gandra",
+1,
+"New Balance Park – Sint",
+"11:30"
+],
+[
+"2026-12-12",
+"Jornada 8",
+"Custóias F.C. “B”",
+0,
+"Complexo Desportivo Custóias",
+"11:30"
+],
+[
+"2026-12-19",
+"Jornada 9",
+"C.D. Leões Seroa",
+1,
+"New Balance Park – Sint",
+"11:30"
+],
+[
+"2027-01-09",
+"Jornada 10",
+"A.D.L. - A.D. Lousada “B”",
+0,
+"Complexo Desportivo Lousada - Fut5 Nº1",
+"11:30"
+],
+[
+"2027-01-16",
+"Jornada 11",
+"",
+0,
+"",
+""
+]
+];
 function seed(){if(!Array.isArray(S.hidden))S.hidden=[];var officialIds=SEED.map(function(s){return "fpf-r"+s[1].replace(/\D/g,"")});S.hidden=S.hidden.filter(function(id){return officialIds.indexOf(id)<0});SEED.forEach(function(s){var id="fpf-r"+s[1].replace(/\D/g,"");var ex=S.games.find(function(g){return g.id===id});if(ex){if(s[6]&&ex.pending===false&&ex.opp&&ex.opp!=="A confirmar"){ex.date=s[0];ex.round=s[1];ex.time=s[5];return}ex.date=s[0];ex.round=s[1];ex.opp=s[2];ex.home=!!s[3];ex.venue=s[4];ex.time=s[5];ex.pending=!!s[6];ex.bye=!s[2]&&!s[6];return}S.games.push({id:id,date:s[0],time:s[5],round:s[1],opp:s[2],home:!!s[3],us:null,them:null,played:true,goals:0,assists:0,notes:"",venue:s[4],pending:!!s[6],bye:!s[2]&&!s[6]})});save()}
 function load(){try{var r=localStorage.getItem(KEY);if(r)S=JSON.parse(r)}catch(e){}if(!S.games)S.games=[];seed()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
