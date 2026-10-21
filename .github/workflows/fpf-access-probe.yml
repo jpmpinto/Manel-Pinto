@@ -97,4 +97,32 @@ jobs:
           season=re.search(r'<option[^>]+selected="selected"[^>]+value="([^"]+)"[^>]*>([^<]+)',text)
           print("HIDDEN_COMPETITION_ID="+(hidden.group(1) if hidden else ""))
           print("SELECTED_SEASON="+(season.group(1)+":"+season.group(2) if season else ""))
+          m=re.search(r'(?is)<div[^>]+class="game-results[^"]*"[^>]*>.*?GRUPO VERMELHO.*?</div>.*?<a[^>]+href="[^"]*GetClassificationAndMatchesByFixture\?fixtureId=(\d+)"[^>]*>1</a>',text)
+          print("RED_FIXTURE1_ID="+(m.group(1) if m else "NOT_FOUND"))
           PY
+          fixture_id=$(python3 - /tmp/fpf-season106.html <<'PY'
+          import re,sys
+          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
+          p=text.lower().find("grupo vermelho")
+          h=text[max(0,p-1200):p+22000] if p>=0 else ""
+          m=re.search(r'href="[^"]*GetClassificationAndMatchesByFixture\?fixtureId=(\d+)"[^>]*>\s*1\s*</a>',h,re.I)
+          print(m.group(1) if m else "")
+          PY
+          )
+          echo "FIXTURE1_ID=$fixture_id"
+          if [ -n "$fixture_id" ]; then
+            curl -L --silent --show-error --max-time 20 \
+              -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' \
+              -H 'Referer: https://centroderesultados-as-prd.azurewebsites.net/Competition/Details?competitionId=22591&seasonId=106' \
+              "https://centroderesultados-as-prd.azurewebsites.net/Competition/GetClassificationAndMatchesByFixture?fixtureId=$fixture_id" \
+              -o /tmp/fpf-round1.html
+            echo "=== FPF Group Vermelho Jornada 1 AJAX ==="
+            echo "ROUND_HTML_BYTES=$(wc -c < /tmp/fpf-round1.html)"
+            python3 - /tmp/fpf-round1.html <<'PY'
+          import re,sys,html
+          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
+          print("ROUND_PREVIEW="+re.sub(r"\s+"," ",text[:600]))
+          stripped=html.unescape(re.sub(r"<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>"," ",text,flags=re.I|re.S))
+          print("ROUND_TEXT="+re.sub(r"\s+"," ",re.sub(r"<[^>]+>"," ",stripped))[:5000])
+          PY
+          fi
