@@ -18,6 +18,8 @@ BASE = "https://centroderesultados-as-prd.azurewebsites.net"
 START_URL = f"{BASE}/Competition/Details?competitionId=22591&seasonId=106"
 INDEX_PATH = Path("index.html")
 SCHEDULE_PATH = Path("fpf-schedule.json")
+OVERRIDES_PATH = Path("schedule-overrides.json")
+VALID_OVERRIDE_FIELDS = {"match_date", "kickoff", "round_label", "opponent", "is_home", "venue"}
 TARGET_TEAM = "Dragon Force F.C. \"C\""
 MONTHS = {
     "jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6,
@@ -200,6 +202,58 @@ def make_seed_rows(rounds: list[dict[str, object]], existing: list[list[object]]
     return output
 
 
+
+def apply_schedule_overrides(seeds: list[list[object]]) -> tuple[list[list[object]], list[str]]:
+    """Apply concrete, previously confirmed club-email overrides after reading the current FPF schedule."""
+    if not OVERRIDES_PATH.exists():
+        return seeds, []
+    try:
+        payload = json.loads(OVERRIDES_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Could not read schedule-overrides.json safely: {exc}") from exc
+    overrides = payload.get("overrides", {}) if isinstance(payload, dict) else None
+    if not isinstance(overrides, dict):
+        raise RuntimeError("schedule-overrides.json must contain an 'overrides' object")
+    result = [list(row) for row in seeds]
+    applied = []
+    for fixture_key, item in overrides.items():
+        if not re.fullmatch(r"fpf-r\d+", str(fixture_key)) or not isinstance(item, dict):
+            raise RuntimeError(f"Invalid override entry: {fixture_key!r}")
+        round_no = int(str(fixture_key).split("r", 1)[1])
+        if round_no < 1 or round_no > len(result):
+            raise RuntimeError(f"Override points to unknown fixture {fixture_key}")
+        unknown = set(item) & (set(item.keys()) - VALID_OVERRIDE_FIELDS)
+        if unknown:
+            # Metadata such as source and subject is allowed; unknown schedule fields are not.
+            metadata = {"source", "subject", "received_at", "reason", "updated_at"}
+            unknown = unknown - metadata
+            if unknown:
+                raise RuntimeError(f"Unknown fields in override {fixture_key}: {sorted(unknown)}")
+        row = result[round_no - 1]
+        for field, value in item.items():
+            if field in {"source", "subject", "received_at", "reason", "updated_at"}:
+                continue
+            index = {"match_date": 0, "round_label": 1, "opponent": 2, "is_home": 3, "venue": 4, "kickoff": 5}[field]
+            if field == "match_date":
+                if not isinstance(value, str) or not re.fullmatch(r"20\d\d-\d\d-\d\d", value):
+                    raise RuntimeError(f"Override {fixture_key} has an invalid match_date")
+            elif field == "kickoff":
+                if not isinstance(value, str) or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
+                    raise RuntimeError(f"Override {fixture_key} has an invalid kickoff")
+            elif field == "is_home":
+                if not isinstance(value, bool):
+                    raise RuntimeError(f"Override {fixture_key} is_home must be boolean")
+                value = 1 if value else 0
+            elif field in {"round_label", "opponent", "venue"}:
+                if not isinstance(value, str) or not value.strip():
+                    raise RuntimeError(f"Override {fixture_key} {field} must be a non-empty string")
+            row[index] = value
+        applied.append(str(fixture_key))
+    if applied:
+        print("Applied confirmed club-email overrides: " + ", ".join(sorted(applied)))
+    return result, applied
+
+
 def run(dry_run: bool) -> int:
     page = fetch(START_URL)
     if not re.search(r'<option[^>]+selected="selected"[^>]+value="106"[^>]*>\s*2026-2027', page, re.I):
@@ -223,6 +277,7 @@ def run(dry_run: bool) -> int:
     index = INDEX_PATH.read_text(encoding="utf-8")
     old_seeds = read_existing_seeds(index)
     new_seeds = make_seed_rows(rounds, old_seeds)
+    new_seeds, applied_overrides = apply_schedule_overrides(new_seeds)
     actual_count = sum(1 for row in new_seeds if row[2])
     print(f"Validated {actual_count} scheduled Dragon Force C matches and {len(new_seeds)-actual_count} bye rounds.")
     print(json.dumps(new_seeds, ensure_ascii=False, indent=2))
@@ -234,6 +289,7 @@ def run(dry_run: bool) -> int:
         "competition_id": 29761,
         "group_name": "GRUPO VERMELHO",
         "team_name": "Dragon Force F.C. C",
+        "club_email_overrides_applied": sorted(applied_overrides),
         "matches": [
             {
                 "fixture_key": f"fpf-r{idx + 1}",
