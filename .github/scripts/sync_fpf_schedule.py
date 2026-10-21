@@ -248,12 +248,12 @@ def run(dry_run: bool) -> int:
             for idx, row in enumerate(new_seeds)
         ],
     }
-    schedule_json = json.dumps(official_schedule, ensure_ascii=False, indent=2) + "\\n"
+    schedule_json = json.dumps(official_schedule, ensure_ascii=False, indent=2) + "\n"
     print(f"Prepared public schedule metadata for {len(official_schedule['matches'])} rounds.")
     if dry_run:
         return 0
     replacement = "var SEED=" + json.dumps(new_seeds, ensure_ascii=False, indent=0) + ";"
-    updated, count = re.subn(r"var SEED=\\[[\\s\\S]*?\\];", replacement, index, count=1)
+    updated, count = re.subn(r"var SEED=\[[\s\S]*?\];", replacement, index, count=1)
     if count != 1:
         raise RuntimeError("Could not replace the SEED array safely")
     if updated != index:
