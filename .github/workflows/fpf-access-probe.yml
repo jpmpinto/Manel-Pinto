@@ -1,9 +1,9 @@
-name: FPF access probe
+name: FPF schedule parser validation
 
 on:
   push:
     paths:
-      - "api/fpf-probe.js"
+      - ".github/scripts/sync_fpf_schedule.py"
       - ".github/workflows/fpf-access-probe.yml"
   workflow_dispatch:
 
@@ -11,122 +11,10 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     steps:
-      - name: Test FPF endpoints from GitHub runner
-        shell: bash
-        run: |
-          set +e
-          probe() {
-            label="$1"
-            url="$2"
-            headers="/tmp/headers.txt"
-            body="/tmp/body.html"
-            status=$(curl -L --silent --show-error --max-time 25 \
-              -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' \
-              -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' \
-              -H 'Accept-Language: pt-PT,pt;q=0.9,en;q=0.8' \
-              -H 'Referer: https://resultados.fpf.pt/' \
-              -D "$headers" -o "$body" -w '%{http_code}' "$url")
-            echo "=== $label ==="
-            echo "HTTP_STATUS=$status"
-            grep -iE '^(content-type|server|location|cf-ray|x-azure-ref):' "$headers" | tail -8 || true
-            echo "BODY_BYTES=$(wc -c < "$body" 2>/dev/null)"
-            python3 - "$body" <<'PY'
-          import re,sys,html
-          try:
-              text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
-          except Exception as e:
-              print("READ_ERROR="+str(e)); raise SystemExit(0)
-          title=re.search(r"<title[^>]*>(.*?)</title>",text,re.I|re.S)
-          print("TITLE="+(html.unescape(re.sub(r"<[^>]+>","",title.group(1))).strip()[:160] if title else ""))
-          print("HAS_TARGET_COMPETITION="+str(bool(re.search(r"22591|LIGA AFP|CARLOS ALBERTO|Grupo Vermelho|Dragon Force",text,re.I))))
-          print("HAS_BOT_CHALLENGE="+str(bool(re.search(r"cloudflare|captcha|access denied|forbidden|request blocked|attention required",text,re.I))))
-          print("SCRIPTS="+str(re.findall(r'<script[^>]+src=["\']([^"\']+)',text,re.I)[:35]))
-          for term in ["22591","competitionId","seasonId","GetMatches","GetCompetition","LIGA AFP","Grupo Vermelho","Dragon Force","Barrosas","script src=","__VIEWSTATE","application/json"]:
-              pos=text.lower().find(term.lower())
-              print("TERM",term,"COUNT",text.lower().count(term.lower()))
-              if pos>=0:
-                  print("CTX",term,re.sub(r"\s+"," ",text[max(0,pos-180):min(len(text),pos+500)]))
-          print("PREVIEW="+re.sub(r"\s+"," ",text[:240]))
-          PY
-          }
-          probe "FPF primary domain" 'https://resultados.fpf.pt/Competition/Details?competitionId=22591&seasonId=102'
-          probe "FPF Azure host" 'https://centroderesultados-as-prd.azurewebsites.net/Competition/Details?competitionId=22591&seasonId=102'
-          curl -L --silent --show-error --max-time 20 \
-            -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' \
-            'https://centroderesultados-as-prd.azurewebsites.net/Scripts/scripts.js?v=1.0.0.17774' -o /tmp/fpf-scripts.js
-          echo "=== FPF frontend script analysis ==="
-          echo "SCRIPT_BYTES=$(wc -c < /tmp/fpf-scripts.js)"
-          python3 - /tmp/fpf-scripts.js <<'PY'
-          import re,sys
-          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
-          print("SCRIPT_PREVIEW="+text[:180].replace("\n"," "))
-          for term in ["OnSuccessAjaxCalls","GetCompetition","GetMatches","GetGames","Competition/Get","Match","Jornada","Round","ajax"]:
-              occ=[m.start() for m in re.finditer(term,text,re.I)]
-              print("TERM",term,"COUNT",len(occ))
-              for pos in occ[:3]:
-                  print("CTX",term,text[max(0,pos-280):min(len(text),pos+480)].replace("\n"," ")[:780])
-          PY
-          curl -L --silent --show-error --max-time 20 \
-            -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' \
-            -H 'Referer: https://centroderesultados-as-prd.azurewebsites.net/' \
-            'https://centroderesultados-as-prd.azurewebsites.net/Competition/Details?competitionId=22591&seasonId=106' -o /tmp/fpf-season106.html
-          echo "=== season 106 HTML summary ==="
-          python3 - /tmp/fpf-season106.html <<'PY'
-          import re,sys
-          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
-          print("BYTES",len(text),"HAS_DATE",bool(re.search(r"2026|2027",text)),"HAS_MATCH_TEXT",bool(re.search(r"Barrosas|Dragon Force|Grupo Vermelho",text,re.I)))
-          for p in [text.find('id="SeasonId"'),text.find('id="CompetitionId"'),text.find('id="competitionId"')]:
-              if p>=0: print("FORM_CONTEXT",text[max(0,p-200):p+1700].replace("\n"," ")[:1900])
-          print("OG_TITLE",re.findall(r"<meta[^>]+property=['\"]og:title['\"][^>]+>",text,re.I)[:2])
-          PY
-          echo "=== 2026-2027 group structure ==="
-          python3 - /tmp/fpf-season106.html <<'PY'
-          import re,sys,html
-          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
-          for term in ["GRUPO VERMELHO","C.R.P. Barrosas","S.C. Castêlo Maia","Dragon Force F.C.","game-results","id=\"matches\"","JORNADAS"]:
-              positions=[m.start() for m in re.finditer(re.escape(term),text,re.I)]
-              print("TERM",term,"COUNT",len(positions),"POSITIONS",positions[:8])
-          pos=text.lower().find("grupo vermelho")
-          if pos>=0:
-              print("RED_GROUP_HTML="+re.sub(r"\s+"," ",text[max(0,pos-1200):min(len(text),pos+12500)]))
-          hidden=re.search(r'id="Competition_Id"[^>]+value="([^"]+)"',text)
-          season=re.search(r'<option[^>]+selected="selected"[^>]+value="([^"]+)"[^>]*>([^<]+)',text)
-          print("HIDDEN_COMPETITION_ID="+(hidden.group(1) if hidden else ""))
-          print("SELECTED_SEASON="+(season.group(1)+":"+season.group(2) if season else ""))
-          m=re.search(r'(?is)<div[^>]+class="game-results[^"]*"[^>]*>.*?GRUPO VERMELHO.*?</div>.*?<a[^>]+href="[^"]*GetClassificationAndMatchesByFixture\?fixtureId=(\d+)"[^>]*>1</a>',text)
-          print("RED_FIXTURE1_ID="+(m.group(1) if m else "NOT_FOUND"))
-          PY
-          fixture_id=$(python3 - /tmp/fpf-season106.html <<'PY'
-          import re,sys
-          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
-          p=text.lower().find("grupo vermelho")
-          h=text[max(0,p-1200):p+22000] if p>=0 else ""
-          m=re.search(r'href="[^"]*GetClassificationAndMatchesByFixture\?fixtureId=(\d+)"[^>]*>\s*1\s*</a>',h,re.I)
-          print(m.group(1) if m else "")
-          PY
-          )
-          echo "FIXTURE1_ID=$fixture_id"
-          if [ -n "$fixture_id" ]; then
-            curl -L --silent --show-error --max-time 20 \
-              -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' \
-              -H 'Referer: https://centroderesultados-as-prd.azurewebsites.net/Competition/Details?competitionId=22591&seasonId=106' \
-              "https://centroderesultados-as-prd.azurewebsites.net/Competition/GetClassificationAndMatchesByFixture?fixtureId=$fixture_id" \
-              -o /tmp/fpf-round1.html
-            echo "=== FPF Group Vermelho Jornada 1 AJAX ==="
-            echo "ROUND_HTML_BYTES=$(wc -c < /tmp/fpf-round1.html)"
-            python3 - /tmp/fpf-round1.html <<'PY'
-          import re,sys,html
-          text=open(sys.argv[1],encoding="utf-8",errors="replace").read()
-          print("ROUND_PREVIEW="+re.sub(r"\s+"," ",text[:600]))
-          stripped=html.unescape(re.sub(r"<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>"," ",text,flags=re.I|re.S))
-          print("ROUND_TEXT="+re.sub(r"\s+"," ",re.sub(r"<[^>]+>"," ",stripped))[:5000])
-          for term in ['id="matches"', "Castêlo", 'class="match', 'class="game']:
-              pos=text.find(term)
-              print("HTML_TERM",term,"COUNT",text.count(term),"POS",pos)
-              if pos>=0: print("HTML_CTX",term,text[max(0,pos-150):min(len(text),pos+1150)].replace("\n"," ")[:1300])
-          PY
-          fi
+      - uses: actions/checkout@v4
+      - name: Read official FPF 2026/27 schedule without writing
+        run: python3 .github/scripts/sync_fpf_schedule.py
