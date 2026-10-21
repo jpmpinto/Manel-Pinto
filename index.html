@@ -83,7 +83,7 @@ $("#file").onchange=function(ev){var f=ev.target.files[0];if(!f)return;var r=new
 document.addEventListener("click",function(e){if(e.target.closest("a.maps-link"))return;var open=e.target.closest("[data-open-game]");if(open){if(window.diaryGuestMode&&window.diaryOpenGuestDetails)diaryOpenGuestDetails(open.dataset.openGame);else openSheet(open.dataset.openGame);return}var s=e.target.closest("[data-s]");if(s){var i=document.getElementById(s.dataset.s),v=parseInt(i.value,10);if(isNaN(v))v=(s.dataset.s==="f_us"||s.dataset.s==="f_them")?(s.dataset.d>0?-1:0):0;i.value=Math.max(0,v+parseInt(s.dataset.d,10));return}var g=e.target.closest(".game");if(g){if(g.dataset.id){if(window.diaryGuestMode&&window.diaryOpenGuestDetails)diaryOpenGuestDetails(g.dataset.id);else openSheet(g.dataset.id)}return}var t=e.target.closest("nav button");if(t){if(window.diaryGuestMode&&t.dataset.t==="more")return;tab=t.dataset.t;render();window.scrollTo(0,0)}});
 $("#fab").onclick=function(){openSheet()};$("#sheet").onclick=function(e){if(e.target.id==="sheet")closeSheet()};
 try{var c=document.createElement("canvas");c.width=c.height=180;var x=c.getContext("2d");x.fillStyle="#0057b8";x.fillRect(0,0,180,180);x.fillStyle="#fff";x.font="bold 100px -apple-system,sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillText("M",90,96);var l=document.createElement("link");l.rel="apple-touch-icon";l.href=c.toDataURL("image/png");document.head.appendChild(l)}catch(e){}
-load();render();
+load();if(new URLSearchParams(window.location.search).get("visitor")!=="1")render();
 </script>
 <script>
 
