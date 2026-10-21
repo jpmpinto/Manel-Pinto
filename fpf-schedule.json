@@ -1,0 +1,121 @@
+{
+  "source": "FPF Centro de Resultados",
+  "source_url": "https://centroderesultados-as-prd.azurewebsites.net/Competition/Details?competitionId=22591&seasonId=106",
+  "season_id": 106,
+  "season_name": "2026-2027",
+  "competition_id": 29761,
+  "group_name": "GRUPO VERMELHO",
+  "team_name": "Dragon Force F.C. C",
+  "matches": [
+    {
+      "fixture_key": "fpf-r1",
+      "round_label": "Jornada 1",
+      "match_date": "2026-12-01",
+      "kickoff": "12:30",
+      "opponent": "C.R.P. Barrosas “B”",
+      "is_home": false,
+      "venue": "Complexo Do C.R.P. Barrosas",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r2",
+      "round_label": "Jornada 2",
+      "match_date": "2026-10-31",
+      "kickoff": "11:30",
+      "opponent": "S.C. Castêlo Maia “B”",
+      "is_home": true,
+      "venue": "Recinto A Indicar",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r3",
+      "round_label": "Jornada 3",
+      "match_date": "2026-11-07",
+      "kickoff": "11:30",
+      "opponent": "A. Vermelhinhos V.N.G. “B”",
+      "is_home": false,
+      "venue": "Complexo Desportivo Sermonde",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r4",
+      "round_label": "Jornada 4",
+      "match_date": "2026-11-14",
+      "kickoff": "11:30",
+      "opponent": "G.D.C. Ferreira",
+      "is_home": true,
+      "venue": "New Balance Park – Sint",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r5",
+      "round_label": "Jornada 5",
+      "match_date": "2026-11-21",
+      "kickoff": "11:30",
+      "opponent": "Varzim S.C. “C”",
+      "is_home": false,
+      "venue": "Campo Sint Nº1 Est Mun Povoa De Varzim",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r6",
+      "round_label": "Jornada 6",
+      "match_date": null,
+      "kickoff": null,
+      "opponent": "Folga",
+      "is_home": false,
+      "venue": "",
+      "match_status": "bye"
+    },
+    {
+      "fixture_key": "fpf-r7",
+      "round_label": "Jornada 7",
+      "match_date": "2026-12-05",
+      "kickoff": "11:30",
+      "opponent": "Aliança F.C. Gandra",
+      "is_home": true,
+      "venue": "New Balance Park – Sint",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r8",
+      "round_label": "Jornada 8",
+      "match_date": "2026-12-12",
+      "kickoff": "11:30",
+      "opponent": "Custóias F.C. “B”",
+      "is_home": false,
+      "venue": "Complexo Desportivo Custóias",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r9",
+      "round_label": "Jornada 9",
+      "match_date": "2026-12-19",
+      "kickoff": "11:30",
+      "opponent": "C.D. Leões Seroa",
+      "is_home": true,
+      "venue": "New Balance Park – Sint",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r10",
+      "round_label": "Jornada 10",
+      "match_date": "2027-01-09",
+      "kickoff": "11:30",
+      "opponent": "A.D.L. - A.D. Lousada “B”",
+      "is_home": false,
+      "venue": "Complexo Desportivo Lousada - Fut5 Nº1",
+      "match_status": "scheduled"
+    },
+    {
+      "fixture_key": "fpf-r11",
+      "round_label": "Jornada 11",
+      "match_date": null,
+      "kickoff": null,
+      "opponent": "Folga",
+      "is_home": false,
+      "venue": "",
+      "match_status": "bye"
+    }
+  ]
+}
