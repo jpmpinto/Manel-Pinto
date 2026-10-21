@@ -90,7 +90,7 @@ load();render();
 var SUPABASE_URL="https://htqsuvzwdhgzkjwphcbw.supabase.co";
 var SUPABASE_PUBLISHABLE_KEY="sb_publishable_Eh3tBj0BVqeqVcrKEaPViw_MQ46sU4A";
 var diarySupabase=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
-var diaryUser=null,diarySeasonId=null,diaryCloudReady=false,diaryLocalKey=KEY,diaryLoadedUser=null,diaryLoadingUser=null,diaryAuthGeneration=0,diarySyncBusy=false,diarySyncAgain=false,diarySyncTimer=null,diaryCloudRowIds={},diaryGuestMode=false;
+var diaryUser=null,diarySeasonId=null,diaryCloudReady=false,diaryLocalKey=KEY,diaryLoadedUser=null,diaryLoadingUser=null,diaryAuthGeneration=0,diarySyncBusy=false,diarySyncAgain=false,diarySyncTimer=null,diaryCloudRowIds={},diaryGuestMode=false,diaryVisitorLanding=new URLSearchParams(window.location.search).get("visitor")==="1",DIARY_GUEST_CODE_KEY="diario-manel-visitor-code";
 
 function diaryReadLocal(key){try{var raw=localStorage.getItem(key);return raw?JSON.parse(raw):null}catch(e){return null}}
 function diaryStoreLocal(){try{localStorage.setItem(diaryLocalKey,JSON.stringify(S))}catch(e){}}
@@ -122,6 +122,7 @@ function diaryQueueSync(){if(!diaryCloudReady||!diaryUser||!diarySeasonId)return
 save=function(){diaryStoreLocal();diaryQueueSync()};
 
 async function diaryHandleSession(session){
+ if(diaryVisitorLanding)return;
  if(!session||!session.user){
   if(diaryGuestMode){render();return}
   diaryAuthGeneration++;diaryLoadingUser=null;diaryLoadedUser=null;diaryUser=null;diarySeasonId=null;diaryCloudReady=false;diaryLocalKey=KEY;diaryCloudRowIds={};render();return
@@ -237,9 +238,11 @@ function diaryRenderAuth(message){
    if(!response.ok)throw new Error(payload.error||"Não foi possível validar o código.");
    if(!Array.isArray(payload.matches))throw new Error("A resposta do serviço não contém os jogos.");
    diaryAuthGeneration++;diaryGuestMode=true;diaryUser={id:"guest",email:null};diarySeasonId=null;diaryCloudReady=false;diaryLocalKey=KEY+":visitor";diaryLoadedUser="guest";diaryCloudRowIds={};
+   try{localStorage.setItem(DIARY_GUEST_CODE_KEY,code.replace(/[^A-Z0-9]/g,""))}catch(storageError){}
    S={games:payload.matches.map(diaryRowToGame),hidden:[]};tab="games";render();diaryStatus("Modo visitante · só de leitura",false);
   }catch(e){guestMessage(e&&e.message?e.message:"Não foi possível abrir o diário. Tenta novamente.");guestBtn.disabled=false}
  };
+ if(visitorOnly&&guestBtn){try{var savedVisitorCode=localStorage.getItem(DIARY_GUEST_CODE_KEY);if(savedVisitorCode){$("#guest-code").value=savedVisitorCode;guestBtn.click()}}catch(storageError){}}
  if(!diarySupabase){status("Não foi possível carregar o serviço de autenticação. Verifica a ligação à Internet.");return}
  $("#auth-login").onclick=async function(){var email=$("#auth-email").value.trim(),password=$("#auth-password").value;if(!email||!password){status("Preenche o email e a palavra-passe.");return}status("A iniciar sessão…");var x=await diarySupabase.auth.signInWithPassword({email:email,password:password});if(x.error)status("Não foi possível entrar: "+x.error.message);else status("Sessão iniciada. A carregar os teus dados…")};
  $("#auth-register").onclick=async function(){var email=$("#auth-email").value.trim(),password=$("#auth-password").value;if(!email||!password){status("Preenche o email e a palavra-passe.");return}if(password.length<8){status("Usa uma palavra-passe com pelo menos 8 caracteres.");return}status("A criar conta…");var x=await diarySupabase.auth.signUp({email:email,password:password,options:{emailRedirectTo:"https://manuelpinto2022.vercel.app/"}});if(x.error)status("Não foi possível criar a conta: "+x.error.message+" Se o erro mencionar o endereço de redirecionamento, é necessário autorizar o domínio da Vercel nas definições de autenticação do Supabase.");else if(x.data&&x.data.session)status("Conta criada. A carregar os dados…");else status("Conta criada. Confirma o email que recebeste e depois volta a este site para iniciar sessão. Verifica também a pasta de spam.")};
@@ -252,7 +255,7 @@ render=function(){
  m.innerHTML=tab==="games"?renderOverview()+renderGames():tab==="stats"?renderStats():renderMore();
  if(diaryGuestMode){
   m.innerHTML='<div class="card"><div class="note">Modo visitante: podes consultar jogos e registos, mas não alterar dados.</div><button type="button" class="btn" id="guest-exit">Sair do acesso de visitante</button></div>'+m.innerHTML;
-  $("#guest-exit").onclick=function(){diaryGuestMode=false;diaryUser=null;diarySeasonId=null;diaryCloudReady=false;diaryLocalKey=KEY;diaryCloudRowIds={};S={games:[],hidden:[]};tab="games";render()};
+  $("#guest-exit").onclick=function(){try{localStorage.removeItem(DIARY_GUEST_CODE_KEY)}catch(storageError){}diaryGuestMode=false;diaryUser=null;diarySeasonId=null;diaryCloudReady=false;diaryLocalKey=KEY;diaryCloudRowIds={};S={games:[],hidden:[]};tab="games";render()};
  }
  $("#fab").style.display=tab==="games"&&!diaryGuestMode?"block":"none";
  document.querySelectorAll("nav button").forEach(function(b){b.style.display=diaryGuestMode&&b.dataset.t==="more"?"none":"";b.classList.toggle("on",b.dataset.t===tab)});
