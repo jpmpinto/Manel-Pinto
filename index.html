@@ -198,6 +198,18 @@ async function diaryHandleSession(session){
   diaryCloudReady=false;diaryStatus("A nuvem não está disponível neste momento. Os dados locais foram preservados. "+(e&&e.message?e.message:""),true);console.error("Diário do Manel: falha no primeiro carregamento",e);render();
  }finally{if(gen===diaryAuthGeneration)diaryLoadingUser=null}
 }
+function diaryOpenGuestDetails(id){
+ var g=S.games.find(function(x){return x.id===id});if(!g)return;
+ var date=fmtLong(g.date)+(g.time?" · "+g.time:"");
+ var top=g.home?"Dragon Force C":(g.opp||"Adversário por confirmar");
+ var bottom=g.home?(g.opp||"Adversário por confirmar"):"Dragon Force C";
+ var score=res(g)===""?"Resultado por registar":(g.home?(g.us+" - "+g.them):(g.them+" - "+g.us));
+ var venue=g.venue||"Local por confirmar";
+ var out='<div class="guest-readonly">MODO VISITANTE · SÓ DE LEITURA</div><h3>'+esc(g.round||"Detalhes do jogo")+'</h3><div class="card"><div class="last-title">'+esc(date)+'</div><div class="last-teams">'+esc(top)+'</div><div class="last-score">'+esc(score)+'</div><div class="last-teams">'+esc(bottom)+'</div><div class="meta">'+esc(venue)+'</div>'+mapsDirections(g)+'</div><div class="card"><div class="last-title">Registo do Manel</div><div>Participação: <b>'+(g.played===false?"Não jogou":"Jogou")+'</b></div><div>Golos: <b>'+Number(g.goals||0)+'</b></div><div>Assistências: <b>'+Number(g.assists||0)+'</b></div></div>';
+ if(g.notes)out+='<div class="card"><div class="last-title">Notas do jogo</div><div class="guest-note">'+esc(g.notes)+'</div></div>';
+ out+='<div class="btns"><button type="button" class="btn p" id="guest-close">Fechar</button></div>';
+ $("#panel").innerHTML=out;$("#sheet").classList.add("open");$("#guest-close").onclick=closeSheet;
+}
 function diaryRenderAuth(message){
  var m=$("#main");
  m.innerHTML='<section class="auth-wrap"><div class="auth-card"><h2>Diário do Manel</h2><p>Inicia sessão para guardar jogos, resultados, golos, assistências e relatos na nuvem e sincronizá-los entre dispositivos.</p><label for="auth-email">Email</label><input id="auth-email" type="email" autocomplete="email" inputmode="email" placeholder="O teu email" required><label for="auth-password">Palavra-passe</label><input id="auth-password" type="password" autocomplete="current-password" minlength="8" placeholder="Pelo menos 8 caracteres" required><button type="button" class="btn p" id="auth-login">Entrar</button><button type="button" class="btn" id="auth-register">Criar conta</button><div id="auth-message" class="auth-status" role="status">'+esc(message||"A tua conta é privada. Se já tens conta, entra; caso contrário, cria uma conta com o teu email.")+'</div><div class="note">Na primeira entrada, os registos guardados neste navegador serão transferidos para a tua conta, se ainda não existirem na nuvem.</div><div class="guest-entry"><h3>Acesso de visitante</h3><p>Consulta o calendário, resultados e notas sem criar conta nem introduzir email. Este acesso é apenas de leitura.</p><label for="guest-code">Código de visitante</label><input id="guest-code" type="text" autocomplete="one-time-code" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX"><button type="button" class="btn" id="guest-login">Entrar sem email</button><div id="guest-message" class="auth-status" role="status"></div></div></div></section>';
@@ -226,10 +238,11 @@ function diaryRenderAuth(message){
 render=function(){
  var m=$("#main");
  if(!diaryUser){diaryRenderAuth();return}
+ if(diaryGuestMode&&tab==="more")tab="games";
  document.querySelector("nav").style.display="flex";
  m.innerHTML=tab==="games"?renderOverview()+renderGames():tab==="stats"?renderStats():renderMore();
- $("#fab").style.display=tab==="games"?"block":"none";
- document.querySelectorAll("nav button").forEach(function(b){b.classList.toggle("on",b.dataset.t===tab)});
+ $("#fab").style.display=tab==="games"&&!diaryGuestMode?"block":"none";
+ document.querySelectorAll("nav button").forEach(function(b){b.style.display=diaryGuestMode&&b.dataset.t==="more"?"none":"";b.classList.toggle("on",b.dataset.t===tab)});
  if(tab==="more"){
   $("#exp").onclick=exportData;$("#imp").onclick=function(){$("#file").click()};
   if($("#logout"))$("#logout").onclick=async function(){diaryStatus("A terminar sessão…",false);var x=await diarySupabase.auth.signOut();if(x.error)diaryStatus("Não foi possível terminar sessão: "+x.error.message,true)};
