@@ -1,20 +1,11 @@
 {
   "overrides": {
     "fpf-r2": {
-      "kickoff": "16:30",
       "venue": "New Balance Park",
       "source": "Outlook: rececaodragonforceporto@dragonforce.pt",
       "subject": "Jogo - Sub 5",
       "received_at": "2026-10-28T17:10:33Z",
       "reason": "O email do clube indica o jogo de 31/10/2026 às 16:30, concentração às 15:45, no New Balance Park, frente ao SC Castêlo da Maia. A Circular 244 da AF Porto confirma a jornada 2 e a data, mas ainda lista 11:30 e Recinto a Indicar. Mantém-se a designação oficial do adversário S.C. Castêlo Maia “B”.",
-      "updated_at": "2026-10-29T09:55:08+00:00"
-    },
-    "fpf-r3": {
-      "kickoff": "13:45",
-      "source": "AF Porto, Circular 255",
-      "subject": "Marcação de jogos em Futebol de Onze, Nove, Sete e Lúdicas de 2 a 8 de novembro de 2026",
-      "received_at": "2026-10-26",
-      "reason": "A Circular 255 lista a partida da Liga AFP Carlos Alberto Sub-6 A. Vermelhinhos V.N.G. “B” x Dragon Force F.C. “C” em 07/11/2026 às 13:45, no Complexo Desportivo Sermonde. A FPF apresenta a mesma partida às 11:30; aplica-se a hora da circular oficial mais recente da AF Porto.",
       "updated_at": "2026-10-29T09:55:08+00:00"
     }
   }
