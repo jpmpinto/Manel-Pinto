@@ -203,10 +203,10 @@ def make_seed_rows(rounds: list[dict[str, object]], existing: list[list[object]]
 
 
 
-def apply_schedule_overrides(seeds: list[list[object]]) -> tuple[list[list[object]], list[str]]:
-    """Apply concrete, previously confirmed club-email overrides after reading the current FPF schedule."""
+def apply_schedule_overrides(seeds: list[list[object]]) -> tuple[list[list[object]], list[str], dict, bool]:
+    """Apply confirmed overrides, pruning individual fields once the FPF agrees."""
     if not OVERRIDES_PATH.exists():
-        return seeds, []
+        return [list(row) for row in seeds], [], {"overrides": {}}, False
     try:
         payload = json.loads(OVERRIDES_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -216,42 +216,60 @@ def apply_schedule_overrides(seeds: list[list[object]]) -> tuple[list[list[objec
         raise RuntimeError("schedule-overrides.json must contain an 'overrides' object")
     result = [list(row) for row in seeds]
     applied = []
-    for fixture_key, item in overrides.items():
-        if not re.fullmatch(r"fpf-r\d+", str(fixture_key)) or not isinstance(item, dict):
+    changed = False
+    metadata = {"source", "subject", "received_at", "reason", "updated_at"}
+    field_indexes = {"match_date": 0, "round_label": 1, "opponent": 2, "is_home": 3, "venue": 4, "kickoff": 5}
+
+    for fixture_key, item in list(overrides.items()):
+        if not re.fullmatch(r"fpf-r\\d+", str(fixture_key)) or not isinstance(item, dict):
             raise RuntimeError(f"Invalid override entry: {fixture_key!r}")
+        unknown = set(item) - VALID_OVERRIDE_FIELDS - metadata
+        if unknown:
+            raise RuntimeError(f"Unknown fields in override {fixture_key}: {sorted(unknown)}")
         round_no = int(str(fixture_key).split("r", 1)[1])
         if round_no < 1 or round_no > len(result):
             raise RuntimeError(f"Override points to unknown fixture {fixture_key}")
-        unknown = set(item) & (set(item.keys()) - VALID_OVERRIDE_FIELDS)
-        if unknown:
-            # Metadata such as source and subject is allowed; unknown schedule fields are not.
-            metadata = {"source", "subject", "received_at", "reason", "updated_at"}
-            unknown = unknown - metadata
-            if unknown:
-                raise RuntimeError(f"Unknown fields in override {fixture_key}: {sorted(unknown)}")
         row = result[round_no - 1]
-        for field, value in item.items():
-            if field in {"source", "subject", "received_at", "reason", "updated_at"}:
+        official_row = seeds[round_no - 1]
+
+        for field in list(item):
+            if field not in VALID_OVERRIDE_FIELDS:
                 continue
-            index = {"match_date": 0, "round_label": 1, "opponent": 2, "is_home": 3, "venue": 4, "kickoff": 5}[field]
+            value = item[field]
             if field == "match_date":
-                if not isinstance(value, str) or not re.fullmatch(r"20\d\d-\d\d-\d\d", value):
+                if not isinstance(value, str) or not re.fullmatch(r"20\\d\\d-\\d\\d-\\d\\d", value):
                     raise RuntimeError(f"Override {fixture_key} has an invalid match_date")
             elif field == "kickoff":
-                if not isinstance(value, str) or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
+                if not isinstance(value, str) or not re.fullmatch(r"(?:[01]\\d|2[0-3]):[0-5]\\d", value):
                     raise RuntimeError(f"Override {fixture_key} has an invalid kickoff")
             elif field == "is_home":
                 if not isinstance(value, bool):
                     raise RuntimeError(f"Override {fixture_key} is_home must be boolean")
-                value = 1 if value else 0
             elif field in {"round_label", "opponent", "venue"}:
                 if not isinstance(value, str) or not value.strip():
                     raise RuntimeError(f"Override {fixture_key} {field} must be a non-empty string")
-            row[index] = value
-        applied.append(str(fixture_key))
+
+            official_value = official_row[field_indexes[field]]
+            matches_official = (bool(official_value) == value) if field == "is_home" else (official_value == value)
+            if matches_official:
+                del item[field]
+                changed = True
+                print(f"FPF now confirms {fixture_key} {field}; removed that override field.")
+                continue
+
+            row[field_indexes[field]] = (1 if value else 0) if field == "is_home" else value
+
+        if not any(field in item for field in VALID_OVERRIDE_FIELDS):
+            del overrides[fixture_key]
+            changed = True
+        else:
+            applied.append(str(fixture_key))
+
     if applied:
-        print("Applied confirmed club-email overrides: " + ", ".join(sorted(applied)))
-    return result, applied
+        print("Applied confirmed schedule overrides: " + ", ".join(sorted(applied)))
+    if changed:
+        print("schedule-overrides.json will be pruned to retain only fields not yet confirmed by FPF.")
+    return result, applied, payload, changed
 
 
 def run(dry_run: bool) -> int:
@@ -277,7 +295,7 @@ def run(dry_run: bool) -> int:
     index = INDEX_PATH.read_text(encoding="utf-8")
     old_seeds = read_existing_seeds(index)
     new_seeds = make_seed_rows(rounds, old_seeds)
-    new_seeds, applied_overrides = apply_schedule_overrides(new_seeds)
+    new_seeds, applied_overrides, cleaned_overrides, overrides_changed = apply_schedule_overrides(new_seeds)
     actual_count = sum(1 for row in new_seeds if row[2])
     print(f"Validated {actual_count} scheduled Dragon Force C matches and {len(new_seeds)-actual_count} bye rounds.")
     print(json.dumps(new_seeds, ensure_ascii=False, indent=2))
@@ -308,6 +326,9 @@ def run(dry_run: bool) -> int:
     print(f"Prepared public schedule metadata for {len(official_schedule['matches'])} rounds.")
     if dry_run:
         return 0
+    if overrides_changed:
+        OVERRIDES_PATH.write_text(json.dumps(cleaned_overrides, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+        print("Updated schedule-overrides.json after removing fields confirmed by FPF.")
     replacement = "var SEED=" + json.dumps(new_seeds, ensure_ascii=False, indent=0) + ";"
     updated, count = re.subn(r"var SEED=\[[\s\S]*?\];", replacement, index, count=1)
     if count != 1:
