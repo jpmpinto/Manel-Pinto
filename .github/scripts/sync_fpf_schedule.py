@@ -221,7 +221,7 @@ def apply_schedule_overrides(seeds: list[list[object]]) -> tuple[list[list[objec
     field_indexes = {"match_date": 0, "round_label": 1, "opponent": 2, "is_home": 3, "venue": 4, "kickoff": 5}
 
     for fixture_key, item in list(overrides.items()):
-        if not re.fullmatch(r"fpf-r\\d+", str(fixture_key)) or not isinstance(item, dict):
+        if not re.fullmatch(r"fpf-r\d+", str(fixture_key)) or not isinstance(item, dict):
             raise RuntimeError(f"Invalid override entry: {fixture_key!r}")
         unknown = set(item) - VALID_OVERRIDE_FIELDS - metadata
         if unknown:
@@ -237,10 +237,10 @@ def apply_schedule_overrides(seeds: list[list[object]]) -> tuple[list[list[objec
                 continue
             value = item[field]
             if field == "match_date":
-                if not isinstance(value, str) or not re.fullmatch(r"20\\d\\d-\\d\\d-\\d\\d", value):
+                if not isinstance(value, str) or not re.fullmatch(r"20\d\d-\d\d-\d\d", value):
                     raise RuntimeError(f"Override {fixture_key} has an invalid match_date")
             elif field == "kickoff":
-                if not isinstance(value, str) or not re.fullmatch(r"(?:[01]\\d|2[0-3]):[0-5]\\d", value):
+                if not isinstance(value, str) or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
                     raise RuntimeError(f"Override {fixture_key} has an invalid kickoff")
             elif field == "is_home":
                 if not isinstance(value, bool):
@@ -327,7 +327,7 @@ def run(dry_run: bool) -> int:
     if dry_run:
         return 0
     if overrides_changed:
-        OVERRIDES_PATH.write_text(json.dumps(cleaned_overrides, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+        OVERRIDES_PATH.write_text(json.dumps(cleaned_overrides, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print("Updated schedule-overrides.json after removing fields confirmed by FPF.")
     replacement = "var SEED=" + json.dumps(new_seeds, ensure_ascii=False, indent=0) + ";"
     updated, count = re.subn(r"var SEED=\[[\s\S]*?\];", replacement, index, count=1)
