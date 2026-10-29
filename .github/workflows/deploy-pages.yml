@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Sync Dragon Force C schedule from FPF"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -16,6 +20,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -23,6 +28,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate inline JavaScript syntax
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script\\b[^>]*>([\\s\\S]*?)</script\\s*>", html, re.IGNORECASE)
+          inline_scripts = [script for script in scripts if script.strip()]
+          if not inline_scripts:
+              raise SystemExit("No inline JavaScript blocks found in index.html")
+          for number, script in enumerate(inline_scripts, 1):
+              Path(f"/tmp/diary-inline-{number}.js").write_text(script, encoding="utf-8")
+          print(f"Extracted {len(inline_scripts)} inline JavaScript block(s).")
+          PY
+          for script in /tmp/diary-inline-*.js; do
+            node --check "$script"
+          done
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload site
