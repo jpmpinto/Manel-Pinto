@@ -6,9 +6,7 @@
   "competition_id": 29761,
   "group_name": "GRUPO VERMELHO",
   "team_name": "Dragon Force F.C. C",
-  "club_email_overrides_applied": [
-    "fpf-r2"
-  ],
+  "club_email_overrides_applied": [],
   "matches": [
     {
       "fixture_key": "fpf-r1",
@@ -24,10 +22,10 @@
       "fixture_key": "fpf-r2",
       "round_label": "Jornada 2",
       "match_date": "2026-10-31",
-      "kickoff": "16:30",
+      "kickoff": null,
       "opponent": "S.C. Castêlo Maia “B”",
       "is_home": true,
-      "venue": "New Balance Park",
+      "venue": "New Balance Park - Sint. (Campo 5) N.º6",
       "match_status": "scheduled"
     },
     {
