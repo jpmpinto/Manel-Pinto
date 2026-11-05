@@ -1,3 +1,12 @@
 {
-  "overrides": {}
+  "overrides": {
+    "fpf-r2": {
+      "kickoff": "16:30",
+      "source": "Outlook: rececaodragonforceporto@dragonforce.pt",
+      "subject": "Jogo - Sub 5",
+      "received_at": "2026-10-28T17:10:33Z",
+      "reason": "O email do clube confirmou o jogo de 31/10/2026 às 16:30, com concentração às 15:45, no New Balance Park. Na sincronização FPF de 05/11/2026 o kickoff passou a vir vazio; mantém-se o horário concreto confirmado pelo clube. O recinto está agora confirmado pela FPF como New Balance Park - Sint. (Campo 5) N.º6, pelo que não se mantém override de venue.",
+      "updated_at": "2026-11-05T10:08:00+00:00"
+    }
+  }
 }
