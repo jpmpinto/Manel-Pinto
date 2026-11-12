@@ -7,7 +7,8 @@
   "group_name": "GRUPO VERMELHO",
   "team_name": "Dragon Force F.C. C",
   "club_email_overrides_applied": [
-    "fpf-r2"
+    "fpf-r2",
+    "fpf-r5"
   ],
   "matches": [
     {
@@ -34,7 +35,7 @@
       "fixture_key": "fpf-r3",
       "round_label": "Jornada 3",
       "match_date": "2026-11-07",
-      "kickoff": "13:45",
+      "kickoff": null,
       "opponent": "A. Vermelhinhos V.N.G. “B”",
       "is_home": false,
       "venue": "Complexo Desportivo Sermonde",
@@ -54,10 +55,10 @@
       "fixture_key": "fpf-r5",
       "round_label": "Jornada 5",
       "match_date": "2026-11-21",
-      "kickoff": "11:30",
+      "kickoff": "12:15",
       "opponent": "Varzim S.C. “C”",
       "is_home": false,
-      "venue": "Campo Sint Nº1 Est Mun Povoa De Varzim",
+      "venue": "Comp. Desp. Alberto Silva (Navais) - Sint",
       "match_status": "scheduled"
     },
     {
