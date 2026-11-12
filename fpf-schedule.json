@@ -8,6 +8,7 @@
   "team_name": "Dragon Force F.C. C",
   "club_email_overrides_applied": [
     "fpf-r2",
+    "fpf-r3",
     "fpf-r5"
   ],
   "matches": [
@@ -35,7 +36,7 @@
       "fixture_key": "fpf-r3",
       "round_label": "Jornada 3",
       "match_date": "2026-11-07",
-      "kickoff": null,
+      "kickoff": "13:45",
       "opponent": "A. Vermelhinhos V.N.G. “B”",
       "is_home": false,
       "venue": "Complexo Desportivo Sermonde",
