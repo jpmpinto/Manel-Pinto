@@ -1,3 +1,28 @@
 {
-  "overrides": {}
+  "overrides": {
+    "fpf-r2": {
+      "kickoff": "16:30",
+      "source": "Outlook: rececaodragonforceporto@dragonforce.pt",
+      "subject": "Jogo - Sub 5",
+      "received_at": "2026-10-28T17:10:33Z",
+      "reason": "O email do clube confirmou o jogo de 31/10/2026 às 16:30, com concentração às 15:45, no New Balance Park. A FPF ainda não publica a hora de início desta jornada; mantém-se apenas o kickoff confirmado pelo clube.",
+      "updated_at": "2026-11-19T09:58:00+00:00"
+    },
+    "fpf-r3": {
+      "kickoff": "13:45",
+      "source": "AF Porto, Circular 255",
+      "subject": "MARCAÇÃO DE JOGOS EM FUTEBOL DE 02 A 08 DE NOVEMBRO DE 2026",
+      "received_at": "2026-10-26",
+      "reason": "A Circular 255 da AF Porto confirma expressamente A. Vermelhinhos V.N.G. “B” x Dragon Force F.C. “C” em 07/11/2026 às 13:45, no Complexo Desportivo Sermonde. A FPF continua a confirmar data, adversário, recinto e condição de visitante, mas não devolve o kickoff; mantém-se apenas a hora confirmada pela AF Porto.",
+      "updated_at": "2026-11-19T09:58:00+00:00"
+    },
+    "fpf-r4": {
+      "kickoff": "12:00",
+      "source": "AF Porto, Circular 264",
+      "subject": "MARCAÇÃO DE JOGOS EM FUTEBOL DE ONZE, NOVE, SETE E LÚDICAS DE 9 A 15 DE NOVEMBRO DE 2026",
+      "received_at": "2026-10-30",
+      "reason": "A Circular 264 da AF Porto confirmou G.D.C. Ferreira x Dragon Force F.C. “C” em 14/11/2026 às 12:00, no Estádio Universidade da Maia - LCA2. A FPF confirma os restantes campos do jogo, mas não publica a hora; mantém-se apenas o kickoff confirmado pela AF Porto.",
+      "updated_at": "2026-11-19T09:58:00+00:00"
+    }
+  }
 }
